@@ -7,7 +7,7 @@ contract BoostoToken is StandardToken {
 
     string public name = "Boosto";
     string public symbol = "BST";
-    uint256 public decimals = 18;
+    uint8 public decimals = 18;
 
     // 1B total supply
     uint256 public totalSupply = 1000000000 * (uint256(10) ** decimals);
@@ -20,7 +20,7 @@ contract BoostoToken is StandardToken {
     uint256 public durationSeconds;
 
     // the ICO ether max cap (in wei)
-    uint256 public maxCap = 1000;
+    uint256 public maxCap;
 
     
      // Minimum Transaction Amount(0.1 ETH)
@@ -55,7 +55,7 @@ contract BoostoToken is StandardToken {
     /**
      * @dev Constructor
      */
-    function BoostoToken() {
+    function BoostoToken() public{
         fundsWallet = msg.sender;
 
         startTimestamp = now;
@@ -114,7 +114,7 @@ contract BoostoToken is StandardToken {
      * @dev Payable fallback. This function will be called
      * when investors send ETH to buy BST
      */
-    function() isIcoOpen checkMin isWhiteListed payable{
+    function() public isIcoOpen checkMin isWhiteListed payable{
         totalRaised = totalRaised.add(msg.value);
 
         uint256 tokenAmount = calculateTokenAmount(msg.value);
@@ -133,7 +133,7 @@ contract BoostoToken is StandardToken {
      * @param weiAmount ETH amount in wei amount
      * @return Total BST amount
      */
-    function calculateTokenAmount(uint256 weiAmount) constant returns(uint256) {
+    function calculateTokenAmount(uint256 weiAmount) public constant returns(uint256) {
         uint256 tokenAmount = weiAmount.mul(coinsPerETH);
         // setting rewards is possible only for 4 weeks
         for (uint i = 1; i <= 4; i++) {
@@ -149,7 +149,7 @@ contract BoostoToken is StandardToken {
      * @param _address The address
      * @param _value Boolean to represent the status
      */
-    function adminUpdateWhiteList(address _address, bool _value) isOwner{
+    function adminUpdateWhiteList(address _address, bool _value) public isOwner{
         whiteList[_address] = _value;
     }
 
@@ -169,7 +169,7 @@ contract BoostoToken is StandardToken {
      */
     function adminAddICO(uint256 _startTimestamp, uint256 _durationSeconds, 
         uint256 _coinsPerETH, uint256 _maxCap, uint256 _minAmount, uint _week1Rewards,
-        uint _week2Rewards, uint _week3Rewards, uint _week4Rewards, bool _isPublic) isOwner{
+        uint _week2Rewards, uint _week3Rewards, uint _week4Rewards, bool _isPublic) public isOwner{
 
         // we can't add a new ICO when an ICO is already in progress
         assert(!isIcoInProgress());
@@ -195,7 +195,7 @@ contract BoostoToken is StandardToken {
      * @dev Return true if an ICO is already in progress;
      * otherwise returns false
      */
-    function isIcoInProgress() constant returns(bool){
+    function isIcoInProgress() public constant returns(bool){
         if(now < startTimestamp){
             return false;
         }
