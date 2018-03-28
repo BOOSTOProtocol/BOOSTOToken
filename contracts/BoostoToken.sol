@@ -72,16 +72,7 @@ contract BoostoToken is StandardToken {
      * @dev Checks if an ICO is open
      */
     modifier isIcoOpen() {
-        require(!isIcoInProgress());
-        _;
-    }
-
-    /**
-     * @dev Checks if that ISO is finished
-     */
-    modifier isIcoFinished() {
-        require(now >= startTimestamp);
-        require(totalRaised >= maxCap || (now >= (startTimestamp + durationSeconds)));
+        require(isIcoInProgress());
         _;
     }
 
@@ -137,7 +128,7 @@ contract BoostoToken is StandardToken {
         uint256 tokenAmount = weiAmount.mul(coinsPerETH);
         // setting rewards is possible only for 4 weeks
         for (uint i = 1; i <= 4; i++) {
-            if (now <= startTimestamp + 7 days) {
+            if (now <= startTimestamp + (i * 7 days)) {
                 return tokenAmount.mul(100+weeklyRewards[i]).div(100);    
             }
         }
