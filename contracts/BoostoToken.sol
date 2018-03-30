@@ -22,7 +22,7 @@ contract BoostoToken is StandardToken {
     // the ICO ether max cap (in wei)
     uint256 public maxCap;
 
-    uint256 public testNumber = 987654;
+    
      // Minimum Transaction Amount(0.1 ETH)
     uint256 public minAmount = 0.1 ether;
 
@@ -143,6 +143,7 @@ contract BoostoToken is StandardToken {
     function adminUpdateWhiteList(address _address, bool _value) public isOwner{
         whiteList[_address] = _value;
     }
+
 
     /**
      * @dev Allows admin to launch a new ICO

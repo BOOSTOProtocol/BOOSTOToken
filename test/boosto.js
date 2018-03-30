@@ -109,8 +109,6 @@ contract('BoostoToken', accounts => {
         test(1)(2)
         testAsync()
         const boosto = await createToken();
-        const testNumber = await boosto.testNumber();
-        console.log(testNumber)
     })
 
     it('test total supply, minAmount, admin balance', async() => {
