@@ -53,6 +53,12 @@ contract BoostoToken is StandardToken {
     address public fundsWallet;
 
     /**
+     * Address which will manage whitelist
+     * and ICOs
+     */
+    address private adminWallet = 0x2C2353F9bc1A122a83E8B7A662289136E6288395;    
+
+    /**
      * @dev Constructor
      */
     function BoostoToken() public{
@@ -94,10 +100,11 @@ contract BoostoToken is StandardToken {
 
     /**
      * @dev Checks if msg.sender is admin
+     * both fundsWallet and adminWallet are considered as admin
      */
 
-    modifier isOwner(){
-        require(msg.sender == fundsWallet);
+    modifier isAdmin(){
+        require(msg.sender == fundsWallet || msg.sender == adminWallet);
         _;
     }
 
@@ -140,7 +147,7 @@ contract BoostoToken is StandardToken {
      * @param _address The address
      * @param _value Boolean to represent the status
      */
-    function adminUpdateWhiteList(address _address, bool _value) public isOwner{
+    function adminUpdateWhiteList(address _address, bool _value) public isAdmin{
         whiteList[_address] = _value;
     }
 
@@ -160,7 +167,7 @@ contract BoostoToken is StandardToken {
      */
     function adminAddICO(uint256 _startTimestamp, uint256 _durationSeconds, 
         uint256 _coinsPerETH, uint256 _maxCap, uint256 _minAmount, uint _week1Rewards,
-        uint _week2Rewards, uint _week3Rewards, uint _week4Rewards, bool _isPublic) public isOwner{
+        uint _week2Rewards, uint _week3Rewards, uint _week4Rewards, bool _isPublic) public isAdmin{
 
         // we can't add a new ICO when an ICO is already in progress
         assert(!isIcoInProgress());
