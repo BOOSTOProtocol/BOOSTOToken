@@ -31,12 +31,14 @@ const timeController = (() => {
         }, (error, result) => error ? reject(error) : resolve(result.result)));
 
     const addDays = (days) => addSeconds(days * 24 * 60 * 60);
+    const addHours = (hours) => addSeconds(hours * 60 * 60);
 
     const currentTimestamp = () => web3.eth.getBlock(web3.eth.blockNumber).timestamp;
 
     return {
         addSeconds,
         addDays,
+        addHours,
         currentTimestamp
     };
 })();
@@ -54,26 +56,28 @@ contract('BoostoToken', accounts => {
     const oneEth = toWei(1);
 
     const supply = toWei(1000000000);
-    const maxCap = toWei(1000);
+    const maxCap = toWei(4);
     const minAmount = toWei(0.1);
 
     const oneMonth = 30 * 24 * 60 * 60;
     const coinsPerETH = 100;
-    const weekRewards = [20, 10, 5, 0];
+
+    const rewardHours = [10, 24, 48, 100];
+    const rewardPerents = [20, 10, 5, 0];
 
     const testAsync = async() => {
         const response = await new Promise(resolve => {
             setTimeout(() => {
-                resolve("async await test...");
+                //resolve("async await test...");
             }, 1000);
         });
-        console.log(response);
+        //console.log(response);
     }
 
     const adminUpdateWhiteList = (boosto) => (address, value) => boosto.adminUpdateWhiteList(address, value, { from: admin });
 
     const test = (a) => (b) => {
-        console.log('jiashunran test', a, b);
+        //console.log('jiashunran test', a, b);
     }
     const createToken = () => BoostoToken.new({ from: admin });
 
@@ -83,10 +87,8 @@ contract('BoostoToken', accounts => {
         coinsPerETH,
         maxCap,
         minAmount,
-        weekRewards[0],
-        weekRewards[1],
-        weekRewards[2],
-        weekRewards[3],
+        rewardHours,
+        rewardPerents,
         true, //isPublic
         { from: admin }
     );
@@ -97,10 +99,8 @@ contract('BoostoToken', accounts => {
         coinsPerETH,
         maxCap,
         minAmount,
-        weekRewards[0],
-        weekRewards[1],
-        weekRewards[2],
-        weekRewards[3],
+        rewardHours,
+        rewardPerents,
         false, //isPublic
         { from: admin }
     )
@@ -155,6 +155,33 @@ contract('BoostoToken', accounts => {
 
     });
 
+    it('test multiple ICO', async() => {
+        const boosto = await createToken();
+        // No ICO by default
+        var ICOInProgress = await boosto.isIcoInProgress()
+        assert.equal(ICOInProgress, false, "An ICO is in progress by default");
+
+        await addPublicICO(boosto);
+
+        ICOInProgress = await boosto.isIcoInProgress()
+        assert.equal(ICOInProgress, true, "No ICO in progress after adding a public ICO");
+
+        await boosto.sendTransaction(transaction(account1, oneEth * 4));
+        ICOInProgress = await boosto.isIcoInProgress()
+        assert.equal(ICOInProgress, false, "ICO is still in progress after reaching maxCap");
+
+        await addPublicICO(boosto);
+        ICOInProgress = await boosto.isIcoInProgress()
+        assert.equal(ICOInProgress, true, "second ICO is not in progress");
+
+        timeController.addHours(50);
+        //send 1 ether to ICO
+        await boosto.sendTransaction(transaction(account2, oneEth));
+        var expectedBSTBalance = oneEth * coinsPerETH * (100 + rewardPerents[3]) / 100;
+        assert.equal((await boosto.balanceOf(account2)).toNumber(), expectedBSTBalance,
+            "second ICO BST balance mismatch");
+    });
+
     it('test transfer', async() => {
         const boosto = await createToken();
         await addPublicICO(boosto);
@@ -168,16 +195,16 @@ contract('BoostoToken', accounts => {
         // funds will go to admin wallet
         assert.equal(adminBalanceAfter, adminBalanceBefore + oneEth, "admin ethBalance mismatch");
 
-        var expectedBSTBalance = oneEth * coinsPerETH * (100 + weekRewards[0]) / 100;
+        var expectedBSTBalance = oneEth * coinsPerETH * (100 + rewardPerents[0]) / 100;
         assert.equal((await boosto.balanceOf(account1)).toNumber(), expectedBSTBalance,
-            "BST balance mismatch(week1)");
+            "BST balance mismatch(period1)");
 
         //test week 2
-        await timeController.addDays(9);
+        await timeController.addHours(rewardHours[0] + 1);
         await boosto.sendTransaction(transaction(account2, oneEth));
-        expectedBSTBalance = oneEth * coinsPerETH * (100 + weekRewards[1]) / 100;
+        expectedBSTBalance = oneEth * coinsPerETH * (100 + rewardPerents[1]) / 100;
         assert.equal((await boosto.balanceOf(account2)).toNumber(), expectedBSTBalance,
-            "BST balance mismatch(week2)");
+            "BST balance mismatch(period2)");
 
         // check minAmount
         await revertExpectedError(boosto.sendTransaction(transaction(account2, toWei(0.05))));
@@ -193,10 +220,10 @@ contract('BoostoToken', accounts => {
         await adminUpdateWhiteList(boosto)(account1, true)
 
         const isInWhiteList1 = await boosto.whiteList(account1);
-        console.log('account1 is in whitelist', isInWhiteList1);
+        //console.log('account1 is in whitelist', isInWhiteList1);
 
         const isInWhiteList2 = await boosto.whiteList(account2);
-        console.log('account2 is in whitelist', isInWhiteList2);
+        //console.log('account2 is in whitelist', isInWhiteList2);
 
         //send 1 ether to ICO
         // await boosto.sendTransaction(transaction(account1, oneEth));
@@ -241,20 +268,20 @@ contract('BoostoToken', accounts => {
         // funds will go to admin wallet
         assert.equal(adminBalanceAfter, adminBalanceBefore + oneEth, "admin ethBalance mismatch");
 
-        var expectedBSTBalance = oneEth * coinsPerETH * (100 + weekRewards[0]) / 100;
+        var expectedBSTBalance = oneEth * coinsPerETH * (100 + rewardPerents[0]) / 100;
         var balance = (await boosto.balanceOf(account1)).toNumber()
-        console.log(balance)
+        //console.log(balance)
 
         assert.equal(balance, expectedBSTBalance,
             "BST balance mismatch(week1)");
 
         //test week 2
-        await timeController.addDays(9);
+        await timeController.addHours(rewardHours[0]+1);
         await boosto.sendTransaction(transaction(account2, oneEth));
-        expectedBSTBalance = oneEth * coinsPerETH * (100 + weekRewards[1]) / 100;
+        expectedBSTBalance = oneEth * coinsPerETH * (100 + rewardPerents[1]) / 100;
 
         var balance = (await boosto.balanceOf(account2)).toNumber()
-        console.log(balance)
+        //console.log(balance)
         assert.equal(balance, expectedBSTBalance,
             "BST balance mismatch(week2)");
 

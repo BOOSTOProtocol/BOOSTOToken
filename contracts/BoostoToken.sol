@@ -5,6 +5,11 @@ import 'zeppelin-solidity/contracts/token/ERC20/StandardToken.sol';
 contract BoostoToken is StandardToken {
     using SafeMath for uint256;
 
+    struct HourlyReward{
+        uint passedHours;
+        uint percent;
+    }
+
     string public name = "Boosto";
     string public symbol = "BST";
     uint8 public decimals = 18;
@@ -30,10 +35,10 @@ contract BoostoToken is StandardToken {
     uint256 public coinsPerETH = 1000;
 
     /**
-     * weeklyRewards[week number] = percent
-     * for example weeklyRewards[1] = 20 -- 20% more coins for first week after ICO start
+     * hourlyRewards[hours from start timestamp] = percent
+     * for example hourlyRewards[10] = 20 -- 20% more coins for first 10 hoours after ICO start
      */
-    mapping(uint => uint) public weeklyRewards;
+    HourlyReward[] public hourlyRewards;
 
     /**
      * if true, everyone can participate in ICOs.
@@ -61,7 +66,7 @@ contract BoostoToken is StandardToken {
     /**
      * @dev Constructor
      */
-    function BoostoToken() public{
+    constructor() public{
         fundsWallet = msg.sender;
 
         startTimestamp = now;
@@ -134,9 +139,9 @@ contract BoostoToken is StandardToken {
     function calculateTokenAmount(uint256 weiAmount) public constant returns(uint256) {
         uint256 tokenAmount = weiAmount.mul(coinsPerETH);
         // setting rewards is possible only for 4 weeks
-        for (uint i = 1; i <= 4; i++) {
-            if (now <= startTimestamp + (i * 7 days)) {
-                return tokenAmount.mul(100+weeklyRewards[i]).div(100);    
+        for (uint i = 0; i < hourlyRewards.length; i++) {
+            if (now <= startTimestamp + (hourlyRewards[i].passedHours * 1 hours)) {
+                return tokenAmount.mul(100+hourlyRewards[i].percent).div(100);    
             }
         }
         return tokenAmount;
@@ -159,18 +164,22 @@ contract BoostoToken is StandardToken {
      * @param _coinsPerETH BST price in ETH(1 ETH = ? BST)
      * @param _maxCap Max ETH capture in wei amount
      * @param _minAmount Min ETH amount per user in wei amount
-     * @param _week1Rewards % of rewards for week 1
-     * @param _week2Rewards % of rewards for week 2
-     * @param _week3Rewards % of rewards for week 3
-     * @param _week4Rewards % of rewards for week 4
      * @param _isPublic Boolean to represent that the ICO is public or not
      */
-    function adminAddICO(uint256 _startTimestamp, uint256 _durationSeconds, 
-        uint256 _coinsPerETH, uint256 _maxCap, uint256 _minAmount, uint _week1Rewards,
-        uint _week2Rewards, uint _week3Rewards, uint _week4Rewards, bool _isPublic) public isAdmin{
+    function adminAddICO(
+        uint256 _startTimestamp,
+        uint256 _durationSeconds, 
+        uint256 _coinsPerETH,
+        uint256 _maxCap,
+        uint256 _minAmount, 
+        uint[] _rewardHours,
+        uint256[] _rewardPercents,
+        bool _isPublic
+        ) public isAdmin{
 
         // we can't add a new ICO when an ICO is already in progress
         assert(!isIcoInProgress());
+        assert(_rewardPercents.length == _rewardHours.length);
 
         startTimestamp = _startTimestamp;
         durationSeconds = _durationSeconds;
@@ -178,15 +187,17 @@ contract BoostoToken is StandardToken {
         maxCap = _maxCap;
         minAmount = _minAmount;
 
-        weeklyRewards[1] = _week1Rewards;
-        weeklyRewards[2] = _week2Rewards;
-        weeklyRewards[3] = _week3Rewards;
-        weeklyRewards[4] = _week4Rewards;
+        hourlyRewards.length = 0;
+        for(uint i=0; i < _rewardHours.length; i++){
+            hourlyRewards[hourlyRewards.length++] = HourlyReward({
+                    passedHours: _rewardHours[i],
+                    percent: _rewardPercents[i]
+                });
+        }
 
         isPublic = _isPublic;
         // reset totalRaised
         totalRaised = 0;
-
     }
 
     /**
@@ -204,5 +215,22 @@ contract BoostoToken is StandardToken {
             return false;
         }
         return true;
+    }
+
+    /**
+     * @dev Return true if an ICO is already in progress;
+     * otherwise returns false
+     */
+    function isIcoInProgress2() public constant returns(uint){
+        if(now < startTimestamp){
+            return 1;
+        }
+        if(now > (startTimestamp + durationSeconds)){
+            return 2;
+        }
+        if(totalRaised >= maxCap){
+            return 3;
+        }
+        return 4;
     }
 }
