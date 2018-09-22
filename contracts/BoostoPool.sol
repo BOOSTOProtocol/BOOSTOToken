@@ -12,7 +12,6 @@ contract BoostoPool{
     uint256 public totalInvestors;
 
     address[] investorsList;
-    address[] public winnerList;
 
     mapping(address => bool) public investors;
     mapping(address => bool) public winners;
@@ -170,7 +169,7 @@ contract BoostoPool{
         assert(!winners[investorsList[winnerIndex]]);
 
         winners[investorsList[winnerIndex]] = true;
-        winnerList[paidWinners++] = investorsList[winnerIndex];
+        paidWinners += 1;
 
         if(bonusInETH){
             investorsList[winnerIndex].transfer(bonus);
