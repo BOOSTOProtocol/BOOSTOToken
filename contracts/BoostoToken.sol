@@ -1,4 +1,4 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.25;
 
 import 'zeppelin-solidity/contracts/token/ERC20/StandardToken.sol';
 
@@ -55,19 +55,19 @@ contract BoostoToken is StandardToken {
      * Address which will receive raised funds 
      * and owns the total supply of tokens
      */
-    address public fundsWallet;
+    address public fundsWallet = 0x776EFa46B4b39Aa6bd2D65ce01480B31042aeAA5;
 
     /**
      * Address which will manage whitelist
      * and ICOs
      */
-    address private adminWallet = 0x2C2353F9bc1A122a83E8B7A662289136E6288395;    
+    address private adminWallet = 0xc6BD816331B1BddC7C03aB51215bbb9e2BE62dD2;    
 
     /**
      * @dev Constructor
      */
     constructor() public{
-        fundsWallet = msg.sender;
+        //fundsWallet = msg.sender;
 
         startTimestamp = now;
 
@@ -215,22 +215,5 @@ contract BoostoToken is StandardToken {
             return false;
         }
         return true;
-    }
-
-    /**
-     * @dev Return true if an ICO is already in progress;
-     * otherwise returns false
-     */
-    function isIcoInProgress2() public constant returns(uint){
-        if(now < startTimestamp){
-            return 1;
-        }
-        if(now > (startTimestamp + durationSeconds)){
-            return 2;
-        }
-        if(totalRaised >= maxCap){
-            return 3;
-        }
-        return 4;
     }
 }

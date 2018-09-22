@@ -1,4 +1,4 @@
-pragma solidity ^0.4.15;
+pragma solidity ^0.4.25;
 
 import 'zeppelin-solidity/contracts/token/ERC20/StandardToken.sol';
 
@@ -16,9 +16,9 @@ contract BoostoPool{
     mapping(address => bool) public investors;
     mapping(address => bool) public winners;
 
-    address private BSTContract = 0x4Aa26643dCF687b7D755848C66B4a8fE7585Ce85;
-    address private fundsWallet = 0x2C2353F9bc1A122a83E8B7A662289136E6288395;
-    address private operatorWallet = 0x2C2353F9bc1A122a83E8B7A662289136E6288395;
+    address private BSTContract = 0xDf0041891BdA1f911C4243f328F7Cf61b37F965b;
+    address private fundsWallet;
+    address private operatorWallet;
 
     uint256 public unit;
     uint256 public size;
@@ -31,8 +31,8 @@ contract BoostoPool{
     uint256 public bonus;
     bool public bonusInETH;
 
-    uint256 startDate;
-    uint256 duration; // in seconds
+    uint256 public startDate;
+    uint256 public duration; // in seconds
 
     /**
      * @dev Creates a new pool
@@ -45,7 +45,9 @@ contract BoostoPool{
         bool _bonusInETH,
         uint256 _unit,
         uint256 _BSTAmount,
-        uint256 _size
+        uint256 _size,
+        address _fundsWallet,
+        address _operatorWallet
         ) public{
         
         startDate = _startDate;
@@ -57,6 +59,9 @@ contract BoostoPool{
         unit = _unit;
         BSTAmount = _BSTAmount;
         size = _size;
+
+        fundsWallet = _fundsWallet;
+        operatorWallet = _operatorWallet;
     }
 
     /**
@@ -199,5 +204,29 @@ contract BoostoPool{
     function getWalletInfo(address addr) 
             public constant returns (bool _isWinner){
         _isWinner = winners[addr];
+    }
+
+    /**
+     * @dev checks if there is enough funds in the contract or not
+     * @param status Boolean to show if there is enough funds or not
+     */
+    function isHealthy() 
+            public constant returns (bool status){
+
+        // ETH balance is not enough
+        if(bonusInETH && address(this).balance < winnerCount.mul(bonus)){
+            return false;
+        }
+        
+        uint256 bstBalance = StandardToken(BSTContract).balanceOf(this);
+
+        uint256 enoughBalance = BSTAmount.mul(size - totalInvestors); 
+        if(!bonusInETH){
+            enoughBalance = bstBalance.add(winnerCount.mul(bonus));
+        }
+        if(bstBalance < enoughBalance){
+            return false;
+        }
+        return true;
     }
 }
